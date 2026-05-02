@@ -1,0 +1,89 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DOCKER_REGISTRY: nischalstha/portfolio-app
+  REMOTE_DIR: /opt/app-partition/portfolio-app
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.DOCKER_REGISTRY }}:backend
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.DOCKER_REGISTRY }}:frontend
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p 2222 120.155.82.115 >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Copy config files to server
+        run: |
+          SSH_OPTS="-o ProxyJump=ubuntu@120.155.82.115:2222 -o StrictHostKeyChecking=no"
+          ssh $SSH_OPTS ubuntu@10.10.10.11 "mkdir -p $REMOTE_DIR/nginx"
+          scp $SSH_OPTS docker-compose.prod.yml ubuntu@10.10.10.11:$REMOTE_DIR/docker-compose.yml
+          scp $SSH_OPTS nginx/nginx.conf.template ubuntu@10.10.10.11:$REMOTE_DIR/nginx/nginx.conf.template
+
+      - name: Create .env on server
+        run: |
+          SSH_OPTS="-o ProxyJump=ubuntu@120.155.82.115:2222 -o StrictHostKeyChecking=no"
+          ssh $SSH_OPTS ubuntu@10.10.10.11 "cat > $REMOTE_DIR/.env << 'ENVEOF'
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }}
+          MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}
+          MINIO_BUCKET=portfolio
+          MAIN_DOMAIN=${{ secrets.MAIN_DOMAIN }}
+          PROJECT_DIR=${{ env.REMOTE_DIR }}
+          ENVEOF"
+
+      - name: Pull and restart containers
+        run: |
+          SSH_OPTS="-o ProxyJump=ubuntu@120.155.82.115:2222 -o StrictHostKeyChecking=no"
+          ssh $SSH_OPTS ubuntu@10.10.10.11 "cd $REMOTE_DIR && docker compose pull && docker compose up -d"
+
+      - name: Verify deployment
+        run: |
+          SSH_OPTS="-o ProxyJump=ubuntu@120.155.82.115:2222 -o StrictHostKeyChecking=no"
+          sleep 10
+          ssh $SSH_OPTS ubuntu@10.10.10.11 "cd $REMOTE_DIR && docker compose ps"

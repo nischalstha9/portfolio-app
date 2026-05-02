@@ -1,0 +1,158 @@
+upstream backend {
+    server backend:8000;
+}
+
+upstream frontend {
+    server frontend:3000;
+}
+
+upstream minio_s3 {
+    server minio:9000;
+}
+
+upstream minio_console {
+    server minio:9001;
+}
+
+server_tokens off;
+
+# app.${MAIN_DOMAIN} — User panel (login, register, dashboard)
+server {
+    listen 80;
+    server_name app.${MAIN_DOMAIN};
+
+    client_max_body_size 50M;
+
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    location /api/ {
+        proxy_pass http://backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        proxy_pass http://frontend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+
+# admin.${MAIN_DOMAIN} — Admin panel
+server {
+    listen 80;
+    server_name admin.${MAIN_DOMAIN};
+
+    client_max_body_size 50M;
+
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    location /api/ {
+        proxy_pass http://backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        proxy_pass http://frontend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+
+# *.public-resume.${MAIN_DOMAIN} — Public portfolio pages
+server {
+    listen 80;
+    server_name ~^(?<slug>[^.]+)\.public-resume\.;
+
+    client_max_body_size 10M;
+
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    location /api/ {
+        proxy_pass http://backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        proxy_pass http://frontend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Portfolio-Slug $slug;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+
+# storage.${MAIN_DOMAIN} — MinIO S3 API + Console
+server {
+    listen 80;
+    server_name storage.${MAIN_DOMAIN};
+
+    client_max_body_size 100M;
+
+    ignore_invalid_headers off;
+    proxy_buffering off;
+
+    location /console/ {
+        rewrite ^/console/(.*) /$1 break;
+        proxy_pass http://minio_console;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_connect_timeout 300;
+        chunked_transfer_encoding off;
+    }
+
+    location / {
+        proxy_pass http://minio_s3;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 300;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        chunked_transfer_encoding off;
+    }
+}
+
+# Catch-all — redirect to app subdomain
+server {
+    listen 80 default_server;
+    server_name _;
+    return 301 http://app.${MAIN_DOMAIN}$request_uri;
+}
