@@ -9,6 +9,9 @@ SCP_CMD          = scp $(SSH_OPTS) -o ProxyJump=$(SSH_JUMP_HOST)
 
 REMOTE_DIR      ?= /opt/app-partition/portfolio-app
 
+NEXT_PUBLIC_API_URL     ?= /api
+NEXT_PUBLIC_MAIN_DOMAIN ?= portfolio.local
+
 .PHONY: dev down logs build push deploy-files deploy-env deploy-up deploy remote-logs remote-status
 
 ## ── Local development ──────────────────────────
@@ -26,11 +29,17 @@ logs:
 
 build:
 	docker buildx build --platform $(PLATFORM) -t $(DOCKER_REGISTRY):backend ./backend
-	docker buildx build --platform $(PLATFORM) -t $(DOCKER_REGISTRY):frontend ./frontend
+	docker buildx build --platform $(PLATFORM) \
+		--build-arg NEXT_PUBLIC_API_URL=$(NEXT_PUBLIC_API_URL) \
+		--build-arg NEXT_PUBLIC_MAIN_DOMAIN=$(NEXT_PUBLIC_MAIN_DOMAIN) \
+		-t $(DOCKER_REGISTRY):frontend ./frontend
 
 push:
 	docker buildx build --platform $(PLATFORM) --push -t $(DOCKER_REGISTRY):backend ./backend
-	docker buildx build --platform $(PLATFORM) --push -t $(DOCKER_REGISTRY):frontend ./frontend
+	docker buildx build --platform $(PLATFORM) --push \
+		--build-arg NEXT_PUBLIC_API_URL=$(NEXT_PUBLIC_API_URL) \
+		--build-arg NEXT_PUBLIC_MAIN_DOMAIN=$(NEXT_PUBLIC_MAIN_DOMAIN) \
+		-t $(DOCKER_REGISTRY):frontend ./frontend
 
 ## ── Deploy ─────────────────────────────────────
 

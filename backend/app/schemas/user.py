@@ -17,6 +17,7 @@ class UserResponse(BaseModel):
     linkedin: str | None
     github: str | None
     avatar_key: str | None
+    custom_domain: str | None
     section_type_order: str | None
     is_admin: bool
     created_at: datetime
@@ -34,6 +35,7 @@ class UserUpdate(BaseModel):
     website: str | None = None
     linkedin: str | None = None
     github: str | None = None
+    custom_domain: str | None = None
     section_type_order: str | None = None
 
 
@@ -47,6 +49,7 @@ class PublicUserResponse(BaseModel):
     linkedin: str | None
     github: str | None
     avatar_url: str | None = None
+    custom_domain: str | None = None
     section_type_order: str | None = None
 
     model_config = {"from_attributes": True}

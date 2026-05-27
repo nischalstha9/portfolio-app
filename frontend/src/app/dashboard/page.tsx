@@ -20,8 +20,8 @@ export default function ProfilePage() {
     setMessage("");
     try {
       const token = getToken()!;
-      const { full_name, slug, headline, summary, location, phone, website, linkedin, github } = user;
-      const updated = await api.updateMe(token, { full_name, slug, headline, summary, location, phone, website, linkedin, github });
+      const { full_name, slug, headline, summary, location, phone, website, linkedin, github, custom_domain } = user;
+      const updated = await api.updateMe(token, { full_name, slug, headline, summary, location, phone, website, linkedin, github, custom_domain: custom_domain || null });
       setUser(updated);
       setMessage("Profile saved.");
     } catch (err: any) {
@@ -66,6 +66,18 @@ export default function ProfilePage() {
             value={user.summary || ""}
             onChange={(e) => setUser({ ...user, summary: e.target.value })}
           />
+        </div>
+        <div style={{ borderTop: "1px solid #333", paddingTop: "1rem", marginTop: "0.5rem" }}>
+          <label style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: 4, display: "block" }}>Custom Domain</label>
+          <input
+            type="text"
+            placeholder="me.example.com"
+            value={user.custom_domain || ""}
+            onChange={(e) => setUser({ ...user, custom_domain: e.target.value })}
+          />
+          <p style={{ fontSize: "0.75rem", color: "#666", marginTop: 4 }}>
+            Point a CNAME record for your domain to <code style={{ color: "#888" }}>{user.slug}.public-resume.{process.env.NEXT_PUBLIC_MAIN_DOMAIN || "portfolio.local"}</code>
+          </p>
         </div>
         <button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Profile"}</button>
       </form>

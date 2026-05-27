@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const MAIN_DOMAIN = process.env.NEXT_PUBLIC_MAIN_DOMAIN || "portfolio.local";
+const API_INTERNAL_URL = process.env.API_INTERNAL_URL || "http://backend:8000";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") || "";
   const hostname = host.split(":")[0];
   const { pathname } = request.nextUrl;
@@ -47,6 +48,17 @@ export function middleware(request: NextRequest) {
       return NextResponse.rewrite(new URL(`/portfolio/${slug}${pathname === "/" ? "" : pathname}`, request.url));
     }
   }
+
+  // Unknown hostname — try resolving as custom domain
+  try {
+    const res = await fetch(`${API_INTERNAL_URL}/api/users/resolve-domain?domain=${hostname}`);
+    if (res.ok) {
+      const { slug } = await res.json();
+      return NextResponse.rewrite(
+        new URL(`/portfolio/${slug}${pathname === "/" ? "" : pathname}`, request.url)
+      );
+    }
+  } catch {}
 
   return NextResponse.next();
 }

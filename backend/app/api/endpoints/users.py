@@ -41,6 +41,17 @@ async def list_users(
     return result.scalars().all()
 
 
+@router.get("/resolve-domain")
+async def resolve_domain(domain: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(User).where(User.custom_domain == domain, User.is_active.is_(True))
+    )
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Domain not found")
+    return {"slug": user.slug}
+
+
 @router.get("/profile/{slug}", response_model=PublicUserResponse)
 async def get_public_profile(slug: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.slug == slug, User.is_active.is_(True)))
@@ -62,6 +73,7 @@ async def get_public_profile(slug: str, db: AsyncSession = Depends(get_db)):
         linkedin=user.linkedin,
         github=user.github,
         avatar_url=avatar_url,
+        custom_domain=user.custom_domain,
         section_type_order=user.section_type_order,
     )
 

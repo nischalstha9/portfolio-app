@@ -23,6 +23,7 @@ jobs:
         run: make push
         env:
           DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY }}
+          NEXT_PUBLIC_MAIN_DOMAIN: ${{ vars.MAIN_DOMAIN }}
 
   deploy:
     runs-on: ubuntu-latest
