@@ -40,8 +40,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // {slug}.public-resume.{MAIN_DOMAIN} → rewrite to /portfolio/{slug}
-  const publicResumeSuffix = `.public-resume.${MAIN_DOMAIN}`;
+  // {slug}.public-resume.app.{MAIN_DOMAIN} → rewrite to /portfolio/{slug}
+  const publicResumeSuffix = `.public-resume.app.${MAIN_DOMAIN}`;
   if (hostname.endsWith(publicResumeSuffix)) {
     const slug = hostname.slice(0, -publicResumeSuffix.length);
     if (slug && !slug.includes(".")) {

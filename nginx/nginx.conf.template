@@ -80,10 +80,10 @@ server {
     }
 }
 
-# *.public-resume.${MAIN_DOMAIN} — Public portfolio pages
+# *.public-resume.app.${MAIN_DOMAIN} — Public portfolio pages
 server {
     listen 80;
-    server_name ~^(?<slug>[^.]+)\.public-resume\.;
+    server_name ~^(?<slug>[^.]+)\.public-resume\.app\.;
 
     client_max_body_size 10M;
 

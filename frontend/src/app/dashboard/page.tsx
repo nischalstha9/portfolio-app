@@ -76,7 +76,7 @@ export default function ProfilePage() {
             onChange={(e) => setUser({ ...user, custom_domain: e.target.value })}
           />
           <p style={{ fontSize: "0.75rem", color: "#666", marginTop: 4 }}>
-            Point a CNAME record for your domain to <code style={{ color: "#888" }}>{user.slug}.public-resume.{process.env.NEXT_PUBLIC_MAIN_DOMAIN || "portfolio.local"}</code>
+            Point a CNAME record for your domain to <code style={{ color: "#888" }}>{user.slug}.public-resume.app.{process.env.NEXT_PUBLIC_MAIN_DOMAIN || "portfolio.local"}</code>
           </p>
         </div>
         <button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Profile"}</button>

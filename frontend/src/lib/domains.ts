@@ -13,7 +13,7 @@ export function adminUrl(path: string = "/") {
 }
 
 export function portfolioUrl(slug: string) {
-  return `http://${slug}.public-resume.${MAIN_DOMAIN}`;
+  return `http://${slug}.public-resume.app.${MAIN_DOMAIN}`;
 }
 
 export type SubdomainType = "app" | "admin" | "portfolio" | "unknown";
@@ -28,7 +28,7 @@ export function detectSubdomain(host: string): { type: SubdomainType; slug?: str
     return { type: "admin" };
   }
 
-  const publicResumeSuffix = `.public-resume.${MAIN_DOMAIN}`;
+  const publicResumeSuffix = `.public-resume.app.${MAIN_DOMAIN}`;
   if (h.endsWith(publicResumeSuffix)) {
     const slug = h.slice(0, -publicResumeSuffix.length);
     if (slug && !slug.includes(".")) {
