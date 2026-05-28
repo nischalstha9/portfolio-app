@@ -20,8 +20,8 @@ export default function ProfilePage() {
     setMessage("");
     try {
       const token = getToken()!;
-      const { full_name, slug, headline, summary, location, phone, website, linkedin, github, custom_domain } = user;
-      const updated = await api.updateMe(token, { full_name, slug, headline, summary, location, phone, website, linkedin, github, custom_domain: custom_domain || null });
+      const { full_name, slug, headline, summary, location, phone, website, linkedin, github, custom_domain, page_title } = user;
+      const updated = await api.updateMe(token, { full_name, slug, headline, summary, location, phone, website, linkedin, github, custom_domain: custom_domain || null, page_title: page_title || null });
       setUser(updated);
       setMessage("Profile saved.");
     } catch (err: any) {
@@ -68,6 +68,18 @@ export default function ProfilePage() {
           />
         </div>
         <div style={{ borderTop: "1px solid #333", paddingTop: "1rem", marginTop: "0.5rem" }}>
+          <label style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: 4, display: "block" }}>Page Title</label>
+          <input
+            type="text"
+            placeholder={`Portfolio | ${user.full_name || "Your Name"}`}
+            value={user.page_title || ""}
+            onChange={(e) => setUser({ ...user, page_title: e.target.value })}
+          />
+          <p style={{ fontSize: "0.75rem", color: "#666", marginTop: 4 }}>
+            Browser tab title for your public portfolio. Defaults to &quot;Portfolio | {user.full_name}&quot;
+          </p>
+        </div>
+        <div>
           <label style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: 4, display: "block" }}>Custom Domain</label>
           <input
             type="text"

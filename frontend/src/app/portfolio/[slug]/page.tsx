@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 const API_BASE = process.env.API_INTERNAL_URL || "http://backend:8000";
@@ -13,6 +14,13 @@ async function getSections(slug: string) {
   const res = await fetch(`${API_BASE}/api/users/profile/${slug}/sections`, { cache: "no-store" });
   if (!res.ok) return [];
   return res.json();
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const profile = await getProfile(slug);
+  if (!profile) return { title: "Not Found" };
+  return { title: profile.page_title || `Portfolio | ${profile.full_name}` };
 }
 
 export default async function PortfolioPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -91,9 +99,6 @@ export default async function PortfolioPage({ params }: { params: Promise<{ slug
         <p style={{ color: "#888", textAlign: "center", padding: "3rem 0" }}>This portfolio is being set up.</p>
       )}
 
-      <footer style={{ textAlign: "center", paddingTop: "2rem", borderTop: "1px solid #2a2a2a", color: "#555", fontSize: "0.8rem" }}>
-        Powered by Portfolio Resume Server
-      </footer>
     </div>
   );
 }

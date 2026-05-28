@@ -27,6 +27,7 @@ class User(Base):
     github: Mapped[str | None] = mapped_column(String(500), nullable=True)
     avatar_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     custom_domain: Mapped[str | None] = mapped_column(String(255), unique=True, index=True, nullable=True)
+    page_title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     section_type_order: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(

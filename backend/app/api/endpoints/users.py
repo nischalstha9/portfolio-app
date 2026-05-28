@@ -74,6 +74,7 @@ async def get_public_profile(slug: str, db: AsyncSession = Depends(get_db)):
         github=user.github,
         avatar_url=avatar_url,
         custom_domain=user.custom_domain,
+        page_title=user.page_title,
         section_type_order=user.section_type_order,
     )
 
