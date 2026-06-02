@@ -24,11 +24,12 @@ import MarkdownEditor from "@/components/MarkdownEditor";
 
 const SECTION_TYPES = ["experience", "education", "skills", "projects", "certifications", "custom"];
 
-function SortableCard({ section, onEdit, onDelete, onToggleVisibility }: {
+function SortableCard({ section, onEdit, onDelete, onToggleVisibility, isEditing }: {
   section: any;
   onEdit: (s: any) => void;
   onDelete: (id: string) => void;
   onToggleVisibility: (id: string, current: boolean) => void;
+  isEditing?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id });
 
@@ -38,9 +39,9 @@ function SortableCard({ section, onEdit, onDelete, onToggleVisibility }: {
     opacity: isDragging ? 0.5 : section.is_visible ? 1 : 0.45,
     padding: "1rem",
     marginBottom: "0.5rem",
-    background: "var(--surface)",
+    background: isEditing ? "var(--accent)" : "var(--surface)",
     borderRadius: 8,
-    border: `1px solid ${isDragging ? "var(--accent)" : "var(--border)"}`,
+    border: `2px solid ${isEditing ? "var(--accent)" : isDragging ? "var(--accent)" : "var(--border)"}`,
   };
 
   return (
@@ -178,6 +179,8 @@ export default function SectionsPage() {
     setForm({ type: s.type, title: s.title, subtitle: s.subtitle || "", description: s.description || "", start_date: s.start_date || "", end_date: s.end_date || "", is_current: s.is_current, url: s.url || "" });
     setEditing(s.id);
     setShowForm(true);
+    // Auto-expand the group when editing
+    setCollapsedGroups((prev) => ({ ...prev, [s.type]: false }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -290,7 +293,7 @@ export default function SectionsPage() {
 
       {message && <p style={{ marginBottom: "1rem", color: "lightgreen" }}>{message}</p>}
 
-      {showForm && (
+      {showForm && !editing && (
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "2rem", padding: "1rem", background: "var(--surface)", borderRadius: 8 }}>
           <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
             {SECTION_TYPES.map((t) => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
@@ -312,7 +315,7 @@ export default function SectionsPage() {
             <input type="checkbox" checked={form.is_current} onChange={(e) => setForm({ ...form, is_current: e.target.checked })} style={{ width: "auto" }} /> Current
           </label>
           <input placeholder="URL" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />
-          <button type="submit">{editing ? "Update" : "Create"} Section</button>
+          <button type="submit">Create Section</button>
         </form>
       )}
 
@@ -335,7 +338,38 @@ export default function SectionsPage() {
               >
                 <SortableContext items={grouped[type].map((s: any) => s.id)} strategy={verticalListSortingStrategy}>
                   {grouped[type].map((s: any) => (
-                    <SortableCard key={s.id} section={s} onEdit={startEdit} onDelete={handleDelete} onToggleVisibility={handleToggleVisibility} />
+                    <div key={s.id}>
+                      <SortableCard section={s} onEdit={startEdit} onDelete={handleDelete} onToggleVisibility={handleToggleVisibility} isEditing={editing === s.id} />
+                      {editing === s.id && (
+                        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1rem", marginTop: "0.5rem", padding: "1rem", background: "var(--surface)", borderRadius: 8, border: "2px solid var(--accent)" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                            <h3 style={{ margin: 0, fontSize: "1rem" }}>Edit Section</h3>
+                            <button type="button" onClick={resetForm} style={{ padding: "4px 8px", fontSize: "0.8rem" }}>Cancel</button>
+                          </div>
+                          <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                            {SECTION_TYPES.map((t) => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+                          </select>
+                          <input placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+                          <input placeholder="Subtitle (e.g. company, institution)" value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} />
+                          <label style={{ fontSize: "0.85rem", color: "var(--muted)" }}>Description (Markdown supported)</label>
+                          <MarkdownEditor
+                            value={form.description}
+                            onChange={(v) => setForm({ ...form, description: v })}
+                            sectionId={editing || undefined}
+                            token={getToken() || undefined}
+                          />
+                          <div style={{ display: "flex", gap: "0.75rem" }}>
+                            <input placeholder="Start date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
+                            <input placeholder="End date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} disabled={form.is_current} />
+                          </div>
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.9rem" }}>
+                            <input type="checkbox" checked={form.is_current} onChange={(e) => setForm({ ...form, is_current: e.target.checked })} style={{ width: "auto" }} /> Current
+                          </label>
+                          <input placeholder="URL" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />
+                          <button type="submit">Update Section</button>
+                        </form>
+                      )}
+                    </div>
                   ))}
                 </SortableContext>
               </DndContext>

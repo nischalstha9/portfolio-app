@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getToken } from "@/lib/auth";
 import { api } from "@/lib/api";
+import MarkdownEditor from "@/components/MarkdownEditor";
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
@@ -60,11 +61,10 @@ export default function ProfilePage() {
           </div>
         ))}
         <div>
-          <label style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: 4, display: "block" }}>Summary</label>
-          <textarea
-            rows={4}
+          <label style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: 4, display: "block" }}>Summary (Markdown supported)</label>
+          <MarkdownEditor
             value={user.summary || ""}
-            onChange={(e) => setUser({ ...user, summary: e.target.value })}
+            onChange={(v) => setUser({ ...user, summary: v })}
           />
         </div>
         <div style={{ borderTop: "1px solid #333", paddingTop: "1rem", marginTop: "0.5rem" }}>

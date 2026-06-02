@@ -57,7 +57,9 @@ export default async function PortfolioPage({ params }: { params: Promise<{ slug
           <p style={{ fontSize: "1.2rem", color: "#888", marginBottom: "1rem" }}>{profile.headline}</p>
         )}
         {profile.summary && (
-          <p style={{ fontSize: "1rem", lineHeight: 1.7, color: "#bbb", marginBottom: "1rem" }}>{profile.summary}</p>
+          <div style={{ fontSize: "1rem", lineHeight: 1.7, color: "#bbb", marginBottom: "1rem" }}>
+            <MarkdownRenderer content={profile.summary} />
+          </div>
         )}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", fontSize: "0.9rem" }}>
           {profile.location && <span style={{ color: "#888" }}>{profile.location}</span>}
