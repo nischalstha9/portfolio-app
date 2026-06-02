@@ -1,3 +1,32 @@
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-portfolio}:${POSTGRES_PASSWORD:-portfolio_dev}@db:5432/${POSTGRES_DB:-portfolio}
+  DATABASE_URL_SYNC: postgresql://${POSTGRES_USER:-portfolio}:${POSTGRES_PASSWORD:-portfolio_dev}@db:5432/${POSTGRES_DB:-portfolio}
+  SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+  MINIO_ENDPOINT: minio:9000
+  MINIO_EXTERNAL_ENDPOINT: storage.${MAIN_DOMAIN:-portfolio.local}
+  MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+  MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+  MINIO_BUCKET: ${MINIO_BUCKET:-portfolio}
+  MINIO_USE_SSL: "false"
+
+x-backend-build: &backend-build
+  context: ./backend
+  dockerfile: Dockerfile
+  target: development
+
+x-backend-common: &backend-common
+  build: *backend-build
+  image: nischalstha/portfolio-app:backend
+  environment: *backend-env
+  env_file:
+    - ./.env
+
+x-depends-infra: &depends-infra
+  db:
+    condition: service_healthy
+  minio:
+    condition: service_healthy
+
 services:
   db:
     image: postgres:16-alpine
@@ -42,59 +71,21 @@ services:
       retries: 5
 
   migration:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: development
-    image: nischalstha/portfolio-app:backend
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-portfolio}:${POSTGRES_PASSWORD:-portfolio_dev}@db:5432/${POSTGRES_DB:-portfolio}
-      DATABASE_URL_SYNC: postgresql://${POSTGRES_USER:-portfolio}:${POSTGRES_PASSWORD:-portfolio_dev}@db:5432/${POSTGRES_DB:-portfolio}
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
-      MINIO_ENDPOINT: minio:9000
-      MINIO_EXTERNAL_ENDPOINT: storage.${MAIN_DOMAIN:-portfolio.local}
-      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
-      MINIO_BUCKET: ${MINIO_BUCKET:-portfolio}
-      MINIO_USE_SSL: "false"
-    env_file:
-      - ./.env
+    <<: *backend-common
     volumes:
       - ./backend:/app
     command: ["alembic", "upgrade", "head"]
     depends_on:
-      db:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
+      <<: *depends-infra
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: development
-    image: nischalstha/portfolio-app:backend
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-portfolio}:${POSTGRES_PASSWORD:-portfolio_dev}@db:5432/${POSTGRES_DB:-portfolio}
-      DATABASE_URL_SYNC: postgresql://${POSTGRES_USER:-portfolio}:${POSTGRES_PASSWORD:-portfolio_dev}@db:5432/${POSTGRES_DB:-portfolio}
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
-      MINIO_ENDPOINT: minio:9000
-      MINIO_EXTERNAL_ENDPOINT: storage.${MAIN_DOMAIN:-portfolio.local}
-      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
-      MINIO_BUCKET: ${MINIO_BUCKET:-portfolio}
-      MINIO_USE_SSL: "false"
-    env_file:
-      - ./.env
+    <<: *backend-common
     volumes:
       - ./backend:/app
     ports:
       - "8000:8000"
     depends_on:
-      db:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
+      <<: *depends-infra
       migration:
         condition: service_completed_successfully
 
